@@ -127,6 +127,22 @@ public class NativeFilePickerUtils
 				}
 			}
 
+			if (Build.VERSION.SDK_INT >= 24 && DocumentsContract.isTreeUri( uri ) )
+			{
+				if( "com.android.externalstorage.documents".equals( uri.getAuthority() ) )
+				{
+					final String docId = DocumentsContract.getTreeDocumentId( uri );
+					final String[] split = docId.split( ":" );
+
+					if( "primary".equalsIgnoreCase( split[0] ) )
+						return Environment.getExternalStorageDirectory() + File.separator + split[1];
+					else if( "raw".equalsIgnoreCase( split[0] ) ) // https://stackoverflow.com/a/51874578/2373034
+						return split[1];
+
+					return GetSecondaryStoragePathFor( split[1] );
+				}
+			}
+
 			if( "content".equalsIgnoreCase( uri.getScheme() ) )
 			{
 				String[] projection = { MediaStore.Images.Media.DATA };

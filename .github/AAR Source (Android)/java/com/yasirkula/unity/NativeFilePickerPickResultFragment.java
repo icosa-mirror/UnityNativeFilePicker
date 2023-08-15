@@ -4,10 +4,12 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -165,6 +167,16 @@ public class NativeFilePickerPickResultFragment extends DialogFragment
 	{
 		super.onDismiss( dialog );
 		resultOperation.sendResultToUnity();
+		try
+		{
+			Intent resumeUnityActivity = new Intent( getActivity(), getActivity().getClass() );
+			resumeUnityActivity.setFlags( Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
+			getActivity().startActivityIfNeeded( resumeUnityActivity, 0 );
+		}
+		catch( Exception e )
+		{
+			Log.e( "Unity", "Exception (resume):", e );
+		}
 	}
 
 	@Override

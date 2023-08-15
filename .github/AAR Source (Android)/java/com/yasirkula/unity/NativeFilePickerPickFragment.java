@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -76,9 +77,7 @@ public class NativeFilePickerPickFragment extends Fragment
 			onActivityResult( PICK_FILE_CODE, Activity.RESULT_CANCELED, null );
 		else
 		{
-			ArrayList<String> mimes = getArguments().getStringArrayList( MIMES_ID );
 			String title = getArguments().getString( TITLE_ID );
-			selectMultiple = getArguments().getBoolean( SELECT_MULTIPLE_ID );
 			String savePath = getArguments().getString( SAVE_PATH_ID );
 
 			int pathSeparator = savePath.lastIndexOf( '/' );
@@ -86,47 +85,17 @@ public class NativeFilePickerPickFragment extends Fragment
 			savePathDirectory = pathSeparator > 0 ? savePath.substring( 0, pathSeparator ) : getActivity().getCacheDir().getAbsolutePath();
 
 			Intent intent;
-			if( mimes.size() <= 1 )
-			{
-				if( pickerMode != PICKER_MODE_OPEN_DOCUMENT || Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT )
-					intent = new Intent( Intent.ACTION_GET_CONTENT );
-				else
-					intent = new Intent( Intent.ACTION_OPEN_DOCUMENT );
-			}
-			else
-			{
-				if( pickerMode == PICKER_MODE_GET_CONTENT || Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT )
-					intent = new Intent( Intent.ACTION_GET_CONTENT );
-				else
-					intent = new Intent( Intent.ACTION_OPEN_DOCUMENT );
 
-				if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT )
-				{
-					String[] mimetypes = new String[mimes.size()];
-					for( int i = 0; i < mimes.size(); i++ )
-						mimetypes[i] = mimes.get( i );
+			intent = new Intent( Intent.ACTION_OPEN_DOCUMENT_TREE );
+			intent.putExtra( DocumentsContract.EXTRA_INITIAL_URI, savePath);
 
-					intent.putExtra( Intent.EXTRA_MIME_TYPES, mimetypes );
-				}
-			}
-
-			intent.setType( getCombinedMimeType( mimes ) );
-			intent.addCategory( Intent.CATEGORY_OPENABLE );
-			intent.addFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION );
-
-			if( selectMultiple && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 )
-				intent.putExtra( Intent.EXTRA_ALLOW_MULTIPLE, true );
 
 			if( title != null && title.length() > 0 )
 				intent.putExtra( Intent.EXTRA_TITLE, title );
 
 			try
 			{
-				//  MIUI devices have issues with Intent.createChooser on at least Android 11 (#15 and https://stackoverflow.com/questions/67785661/taking-and-picking-photos-on-poco-x3-with-android-11-does-not-work)
-				if( NativeFilePicker.UseDefaultFilePickerApp || ( Build.VERSION.SDK_INT == 30 && NativeFilePickerUtils.IsXiaomiOrMIUI() ) )
-					startActivityForResult( intent, PICK_FILE_CODE );
-				else
-					startActivityForResult( Intent.createChooser( intent, title ), PICK_FILE_CODE );
+				startActivityForResult( intent, PICK_FILE_CODE );
 			}
 			catch( ActivityNotFoundException e )
 			{
@@ -205,5 +174,16 @@ public class NativeFilePickerPickFragment extends Fragment
 			getFragmentManager().beginTransaction().remove( this ).commit();
 		else
 			getFragmentManager().beginTransaction().remove( this ).add( 0, resultFragment ).commit();
+
+		try
+		{
+			Intent resumeUnityActivity = new Intent( getActivity(), getActivity().getClass() );
+			resumeUnityActivity.setFlags( Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
+			getActivity().startActivityIfNeeded( resumeUnityActivity, 0 );
+		}
+		catch( Exception e )
+		{
+			Log.e( "Unity", "Exception (resume):", e );
+		}
 	}
 }

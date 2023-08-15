@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -126,6 +128,12 @@ public class NativeFilePickerPickResultOperation
 		String path = NativeFilePickerUtils.GetPathFromURI( context, uri );
 		if( path != null && path.length() > 0 )
 		{
+			if (Build.VERSION.SDK_INT >= 24 && DocumentsContract.isTreeUri( uri ) )
+			{
+				// This is a folder path, return w/o checks.
+				return path;
+			}
+
 			// Check if file is accessible
 			FileInputStream inputStream = null;
 			try
